@@ -1,0 +1,1148 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>🔥 Métodos Numéricos Interactivos - CG & SOR</title>
+    <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700&family=Roboto:wght@300;400;700&display=swap" rel="stylesheet">
+    <style>
+        /* Estilos Generales y Reset */
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Roboto', sans-serif;
+            background: linear-gradient(135deg, #05081b 0%, #10142b 50%, #05081b 100%);
+            color: #f0f6ff;
+            min-height: 100vh;
+            overflow-x: hidden;
+            line-height: 1.6;
+        }
+
+        /* Efecto de Nieve (Estrellas) */
+        .snow {
+            position: fixed;
+            top: -10px;
+            background: #ffffff80;
+            border-radius: 50%;
+            pointer-events: none;
+            animation: fall linear infinite;
+            opacity: 0.8;
+            z-index: 1;
+            box-shadow: 0 0 5px #ffffff;
+        }
+
+        @keyframes fall {
+            to {
+                transform: translateY(100vh);
+            }
+        }
+
+        /* Encabezado */
+        header {
+            background: rgba(10, 15, 30, 0.9);
+            backdrop-filter: blur(10px);
+            padding: 20px 0 0;
+            box-shadow: 0 4px 50px rgba(0, 255, 255, 0.2);
+            position: sticky;
+            top: 0;
+            z-index: 100;
+            border-bottom: 3px solid #00ffff;
+        }
+
+        h1 {
+            text-align: center;
+            font-size: 3em;
+            font-family: 'Orbitron', sans-serif;
+            background: linear-gradient(90deg, #00ffff, #00ff88, #00ffff);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            text-shadow: 0 0 30px rgba(0, 255, 255, 0.7);
+            animation: glow 3s ease-in-out infinite alternate;
+        }
+
+        @keyframes glow {
+            from { filter: drop-shadow(0 0 8px #00ffff); }
+            to { filter: drop-shadow(0 0 25px #00ffff); }
+        }
+
+        /* Navegación */
+        nav {
+            display: flex;
+            justify-content: center;
+            gap: 40px;
+            margin-top: 30px;
+            padding: 10px 0;
+        }
+
+        .nav-btn {
+            padding: 15px 50px;
+            font-size: 1.2em;
+            background: transparent;
+            border: 2px solid #00ffff60;
+            color: #00ffff;
+            cursor: pointer;
+            transition: all 0.4s cubic-bezier(0.25, 0.8, 0.25, 1);
+            text-transform: uppercase;
+            font-weight: 700;
+            letter-spacing: 2px;
+            position: relative;
+            overflow: hidden;
+            border-radius: 5px;
+        }
+
+        .nav-btn:hover {
+            border-color: #00ffff;
+            transform: scale(1.05);
+            box-shadow: 0 0 30px rgba(0, 255, 255, 0.5);
+            color: #00ff88;
+        }
+
+        .nav-btn.active {
+            background: linear-gradient(135deg, #00ffff, #00ff88);
+            color: #05081b;
+            border-color: #00ff88;
+            box-shadow: 0 0 40px rgba(0, 255, 255, 0.8);
+            transform: scale(1.08);
+        }
+
+        /* Contenido Principal */
+        .container {
+            max-width: 1500px;
+            margin: 40px auto;
+            padding: 0 20px;
+            position: relative;
+            z-index: 2;
+        }
+
+        .method-section {
+            display: none;
+            animation: fadeIn 0.6s ease-out;
+            padding: 20px;
+        }
+
+        .method-section.active {
+            display: grid;
+            grid-template-columns: 2fr 3fr;
+            gap: 30px;
+        }
+
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(30px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        .left-panel {
+            display: flex;
+            flex-direction: column;
+            gap: 30px;
+        }
+        
+        .info-card, .input-section, .results {
+            background: rgba(15, 20, 45, 0.95);
+            backdrop-filter: blur(15px);
+            padding: 30px;
+            border-radius: 15px;
+            border: 1px solid #00ffff40;
+            box-shadow: 0 0 40px rgba(0, 255, 255, 0.1);
+            transition: transform 0.3s;
+        }
+        
+        /* Tablas */
+        .results table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 15px;
+            font-size: 0.9em;
+            font-family: 'Roboto Mono', monospace;
+        }
+        .results th, .results td {
+            border: 1px solid #00ffff30;
+            padding: 8px;
+            text-align: right;
+        }
+        .results th {
+            background-color: #00ffff10;
+            color: #00ffff;
+            font-weight: bold;
+        }
+        .results td:first-child {
+            text-align: center;
+        }
+        
+        .convergence-indicator {
+            padding: 5px 10px;
+            border-radius: 5px;
+            font-weight: bold;
+            font-size: 1.1em;
+            display: inline-block;
+        }
+
+        .converged {
+            background-color: #00ff8830;
+            color: #00ff88;
+            box-shadow: 0 0 10px #00ff88;
+        }
+
+        .iterating {
+            background-color: #ff00ff30;
+            color: #ff00ff;
+            box-shadow: 0 0 10px #ff00ff;
+        }
+
+        .info-card h2 {
+            color: #00ffff;
+            margin-bottom: 15px;
+            font-size: 2em;
+            border-bottom: 2px solid #00ff88;
+            padding-bottom: 10px;
+        }
+
+        /* Sección de Input */
+        .input-section h3 {
+            color: #00ff88;
+            margin-bottom: 25px;
+            font-size: 1.8em;
+            text-align: center;
+        }
+
+        .input-group {
+            margin-bottom: 25px;
+        }
+
+        label {
+            display: block;
+            margin-bottom: 10px;
+            color: #00ff88;
+            font-weight: 700;
+            font-size: 1.1em;
+        }
+
+        input {
+            width: 100%;
+            padding: 15px;
+            background: rgba(10, 14, 39, 0.8);
+            border: 2px solid #00ffff40;
+            border-radius: 10px;
+            color: #e0e6ff;
+            font-size: 1.05em;
+            transition: all 0.3s;
+        }
+
+        input:focus {
+            outline: none;
+            border-color: #00ffff;
+            box-shadow: 0 0 20px rgba(0, 255, 255, 0.5);
+            background: rgba(10, 14, 39, 0.95);
+        }
+
+        /* Estilo para la Matriz Cuadrícula */
+        .matrix-grid {
+            display: grid;
+            grid-template-columns: repeat(4, 1fr);
+            gap: 8px;
+            padding: 15px;
+            background: rgba(10, 14, 39, 0.8);
+            border: 2px solid #00ff8860;
+            border-radius: 10px;
+        }
+        
+        .matrix-grid input {
+            padding: 8px;
+            text-align: center;
+            font-family: 'Orbitron', sans-serif;
+            font-size: 1.1em;
+            border: 1px solid #00ffff40;
+            background: rgba(0, 0, 0, 0.4);
+            color: #00ff88;
+        }
+
+        .matrix-grid input:focus {
+             border-color: #00ff88;
+             box-shadow: 0 0 10px #00ff88;
+        }
+
+        /* Estilos para el Vector b */
+        .vector-input {
+            display: flex;
+            flex-direction: column;
+            gap: 5px;
+            max-height: 180px; /* Para que parezca un vector */
+            overflow-y: hidden;
+            padding: 15px;
+            background: rgba(10, 14, 39, 0.8);
+            border: 2px solid #00ffff60;
+            border-radius: 10px;
+        }
+
+        .vector-input input {
+            padding: 8px;
+            text-align: center;
+            font-family: 'Orbitron', sans-serif;
+            font-size: 1.1em;
+            border: 1px solid #ff00ff40;
+            background: rgba(0, 0, 0, 0.4);
+            color: #ff00ff;
+        }
+
+        .vector-input input:focus {
+            border-color: #ff00ff;
+            box-shadow: 0 0 10px #ff00ff;
+        }
+
+        /* Botón Resolver */
+        .solve-btn {
+            width: 100%;
+            padding: 20px;
+            font-size: 1.4em;
+            background: linear-gradient(135deg, #00ffff, #00ff88);
+            border: none;
+            color: #0a0e27;
+            font-weight: bold;
+            cursor: pointer;
+            border-radius: 12px;
+            text-transform: uppercase;
+            letter-spacing: 3px;
+            transition: all 0.4s;
+            margin-top: 20px;
+            box-shadow: 0 0 20px rgba(0, 255, 255, 0.3);
+        }
+
+        .solve-btn:hover {
+            transform: scale(1.02);
+            box-shadow: 0 15px 40px rgba(0, 255, 255, 0.7);
+        }
+
+        /* Sección de Simulación */
+        .simulation {
+            background: rgba(10, 14, 39, 0.8);
+            border: 3px solid #00ffff;
+            border-radius: 15px;
+            padding: 20px;
+            margin-top: 30px;
+            min-height: 400px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            box-shadow: 0 0 30px #00ffff60;
+            position: relative;
+        }
+
+        /* Media Queries para Responsividad */
+        @media (max-width: 1200px) {
+            .method-section.active {
+                grid-template-columns: 1fr;
+            }
+            .results {
+                grid-column: 1 / 2;
+                grid-row: 3 / 4;
+            }
+        }
+    </style>
+</head>
+<body>
+    <script>
+        // Generar estrellas/nieve (código original)
+        function createSnowflakes() {
+            setInterval(() => {
+                const snowflake = document.createElement('div');
+                snowflake.classList.add('snow');
+                const size = Math.random() * 5 + 2;
+                snowflake.style.width = size + 'px';
+                snowflake.style.height = size + 'px';
+                snowflake.style.left = Math.random() * window.innerWidth + 'px';
+                snowflake.style.animationDuration = (Math.random() * 5 + 3) + 's';
+                snowflake.style.opacity = Math.random() * 0.8 + 0.2;
+                document.body.appendChild(snowflake);
+                
+                setTimeout(() => snowflake.remove(), 8000);
+            }, 100);
+        }
+
+        // Función para cambiar de método (código original)
+        function showMethod(method, event) {
+            document.querySelectorAll('.method-section').forEach(s => s.classList.remove('active'));
+            document.querySelectorAll('.nav-btn').forEach(b => b.classList.remove('active'));
+            
+            if (method === 'cg') {
+                document.getElementById('cg-section').classList.add('active');
+            } else {
+                document.getElementById('sor-section').classList.add('active');
+            }
+            if (event) {
+                event.target.classList.add('active');
+            }
+        }
+
+        // --- FUNCIONES MATRICIALES AUXILIARES ---
+        function parseMatrixFromGrid(idPrefix) {
+            const matrix = [];
+            for (let i = 0; i < 4; i++) {
+                const row = [];
+                for (let j = 0; j < 4; j++) {
+                    const input = document.getElementById(`${idPrefix}-A-${i}-${j}`);
+                    row.push(parseFloat(input.value));
+                }
+                matrix.push(row);
+            }
+            return matrix;
+        }
+
+        function parseVectorFromInputs(idPrefix) {
+            const vector = [];
+            for (let i = 0; i < 4; i++) {
+                const input = document.getElementById(`${idPrefix}-b-${i}`);
+                vector.push(parseFloat(input.value));
+            }
+            return vector;
+        }
+
+        // --- CÓDIGO DEL GRADIENTE CONJUGADO ---
+        function solveCG() {
+            const A = parseMatrixFromGrid('cg');
+            const b = parseVectorFromInputs('cg');
+            const tol = parseFloat(document.getElementById('cg-tol').value);
+            const maxIter = parseInt(document.getElementById('cg-max-iter').value);
+
+            const n = b.length;
+            if (n !== 4) {
+                alert("Error: Asegúrate de que todos los 16 campos de A y los 4 de b están llenos.");
+                return;
+            }
+
+            let x = new Array(n).fill(0);
+            const Ax = A.map(row => row.reduce((sum, aij, j) => sum + aij * x[j], 0));
+            let r = b.map((bi, i) => bi - Ax[i]);
+            let p = [...r];
+            let rsold = r.reduce((sum, ri) => sum + ri * ri, 0);
+            
+            const iterations = [];
+            let converged = false;
+            
+            for (let iter = 0; iter < maxIter; iter++) {
+                const Ap = A.map(row => row.reduce((sum, aij, j) => sum + aij * p[j], 0));
+                const p_Ap = p.reduce((sum, pi, i) => sum + pi * Ap[i], 0);
+                if (p_Ap === 0) break;
+                const alpha = rsold / p_Ap;
+                
+                x = x.map((xi, i) => xi + alpha * p[i]);
+                r = r.map((ri, i) => ri - alpha * Ap[i]);
+                
+                const rsnew = r.reduce((sum, ri) => sum + ri * ri, 0);
+                const error = Math.sqrt(rsnew);
+                
+                iterations.push({ iter: iter + 1, x: [...x], error: error });
+                
+                if (error < tol) {
+                    converged = true;
+                    break;
+                }
+                
+                const beta = rsnew / rsold;
+                p = r.map((ri, i) => ri + beta * p[i]);
+                rsold = rsnew;
+            }
+            
+            displayCGResults(iterations, converged, x);
+            visualizeCGError(iterations, tol); // Pasamos la tolerancia
+            visualizeCGHeatMap(x);
+        }
+
+        function displayCGResults(iterations, converged, solution) {
+            const output = document.getElementById('cg-output');
+            const status = converged ? 
+                `<span class="convergence-indicator converged">✓ CONVERGIÓ en ${iterations.length} iteraciones</span>` : 
+                `<span class="convergence-indicator iterating">⚠ NO CONVERGIÓ (Max ${iterations.length} iter.)</span>`;
+            
+            let html = `<p><strong>Estado del Cálculo:</strong> ${status}</p>`;
+            html += `<h4 style="color: #00ffff; margin-top: 20px;">Solución Final: Temperaturas en °C</h4>`;
+            html += '<ul style="list-style: none; padding: 20px;">';
+            solution.forEach((val, i) => {
+                html += `<li style="font-size: 1.2em; margin: 10px 0;"><strong>T${i+1}:</strong> ${val.toFixed(4)}°C</li>`;
+            });
+            html += '</ul>';
+            
+            html += '<h4 style="color: #00ffff; margin-top: 20px;">Tabla de Iteraciones Detallada:</h4>';
+            html += '<table><thead><tr><th>Iter</th>';
+            for (let i = 0; i < solution.length; i++) {
+                html += `<th>T${i+1}</th>`;
+            }
+            html += '<th>Error ||r||</th></tr></thead><tbody>';
+            
+            iterations.forEach(iter => {
+                html += `<tr><td>${iter.iter}</td>`;
+                iter.x.forEach(xi => {
+                    html += `<td>${xi.toFixed(6)}</td>`;
+                });
+                html += `<td>${iter.error.toExponential(3)}</td></tr>`;
+            });
+            
+            html += '</tbody></table>';
+            output.innerHTML = html;
+        }
+
+        /* SIMULACIÓN 1: MAPA DE CALOR (CG) */
+        function visualizeCGHeatMap(temperatures) {
+            const canvas = document.getElementById('cg-simulation-canvas');
+            const ctx = canvas.getContext('2d');
+            const W = canvas.width;
+            const H = canvas.height;
+            ctx.clearRect(0, 0, W, H);
+            
+            const minTemp = 0;
+            const maxTemp = 22; 
+            
+            function getHeatColor(temp) {
+                const ratio = Math.min(1, Math.max(0, (temp - minTemp) / (maxTemp - minTemp)));
+                const r = Math.floor(255 * ratio);
+                const g = Math.floor(255 * (0.5 + ratio * 0.5));
+                const b = Math.floor(255 * (1 - ratio * 0.8));
+                const alpha = 0.5 + ratio * 0.5;
+
+                return {
+                    fill: `rgba(${r}, ${g}, ${b}, ${alpha})`,
+                    shadow: `rgb(${r}, ${g}, ${b})`,
+                    ratio: ratio
+                };
+            }
+
+            const map = [
+                {temp: temperatures[2], pos: [W/4, H*3/4], label: 'T3'},
+                {temp: temperatures[3], pos: [W*3/4, H*3/4], label: 'T4'},
+                {temp: temperatures[0], pos: [W/4, H/4], label: 'T1'},
+                {temp: temperatures[1], pos: [W*3/4, H/4], label: 'T2'}
+            ];
+            
+            const pointRadius = 30;
+            
+            // 1. Dibujar BORDES
+            ctx.lineWidth = 15;
+            
+            const topColor = getHeatColor(maxTemp);
+            ctx.strokeStyle = topColor.shadow;
+            ctx.shadowColor = topColor.shadow;
+            ctx.shadowBlur = 20;
+            ctx.beginPath();
+            ctx.moveTo(0, 0);
+            ctx.lineTo(W, 0);
+            ctx.stroke();
+            
+            const coldColor = getHeatColor(minTemp);
+            ctx.strokeStyle = coldColor.shadow;
+            ctx.shadowColor = coldColor.shadow;
+            ctx.shadowBlur = 10;
+            ctx.beginPath();
+            ctx.moveTo(W, 0);
+            ctx.lineTo(W, H);
+            ctx.lineTo(0, H);
+            ctx.lineTo(0, 0);
+            ctx.stroke();
+            ctx.shadowBlur = 0;
+            
+            // 2. Dibujar GRADIENTE DE CALOR DE FONDO (Mejora visual)
+            const gradient = ctx.createLinearGradient(0, 0, 0, H);
+            gradient.addColorStop(0, getHeatColor(maxTemp * 1.5).fill);
+            gradient.addColorStop(0.5, getHeatColor(maxTemp * 0.5).fill);
+            gradient.addColorStop(1, getHeatColor(minTemp).fill);
+            ctx.fillStyle = gradient;
+            ctx.fillRect(0, 0, W, H);
+            
+            // 3. Dibujar Puntos de Temperatura
+            map.forEach(point => {
+                const color = getHeatColor(point.temp);
+
+                ctx.fillStyle = color.fill;
+                ctx.beginPath();
+                ctx.arc(point.pos[0], point.pos[1], pointRadius, 0, Math.PI * 2);
+                ctx.fill();
+                
+                ctx.strokeStyle = '#ffffff';
+                ctx.lineWidth = 3;
+                ctx.shadowColor = color.shadow;
+                ctx.shadowBlur = 15 * color.ratio;
+                ctx.stroke();
+                ctx.shadowBlur = 0;
+                
+                ctx.fillStyle = '#0a0e27';
+                ctx.font = 'bold 18px Orbitron';
+                ctx.textAlign = 'center';
+                ctx.textBaseline = 'middle';
+                ctx.fillText(point.label, point.pos[0], point.pos[1] - 8);
+                
+                ctx.fillStyle = '#0a0e27';
+                ctx.font = '14px Roboto';
+                ctx.fillText(point.temp.toFixed(2) + '°C', point.pos[0], point.pos[1] + 15);
+            });
+        }
+        
+        /* GRÁFICO 1: CONVERGENCIA CG */
+        function visualizeCGError(iterations, tol) {
+            const canvas = document.getElementById('cg-canvas');
+            const ctx = canvas.getContext('2d');
+            const W = canvas.width;
+            const H = canvas.height;
+            const PADDING = 40;
+            ctx.clearRect(0, 0, W, H);
+
+            const errors = iterations.map(i => i.error);
+            const maxError = Math.max(...errors) * 1.1; 
+            const maxIter = iterations.length > 0 ? iterations[iterations.length - 1].iter : 1;
+
+            const drawAreaW = W - 2 * PADDING;
+            const drawAreaH = H - 2 * PADDING;
+
+            // 1. Dibujar Ejes
+            ctx.strokeStyle = '#f0f6ff';
+            ctx.lineWidth = 2;
+            ctx.beginPath();
+            ctx.moveTo(PADDING, PADDING);
+            ctx.lineTo(PADDING, H - PADDING); // Eje Y
+            ctx.lineTo(W - PADDING, H - PADDING); // Eje X
+            ctx.stroke();
+
+            // 2. Dibujar Línea de Tolerancia (Horizontal)
+            const tolY = H - PADDING - (drawAreaH * (tol / maxError));
+            ctx.strokeStyle = '#ff00ff';
+            ctx.setLineDash([5, 5]);
+            ctx.lineWidth = 1;
+            ctx.beginPath();
+            ctx.moveTo(PADDING, tolY);
+            ctx.lineTo(W - PADDING, tolY);
+            ctx.stroke();
+            ctx.setLineDash([]); // Reset dash
+
+            // 3. Dibujar Línea de Error
+            ctx.strokeStyle = '#00ff88';
+            ctx.lineWidth = 3;
+            ctx.shadowColor = '#00ff88';
+            ctx.shadowBlur = 10;
+            ctx.beginPath();
+            
+            iterations.forEach((iter, index) => {
+                const x = PADDING + (drawAreaW * ((index + 1) / maxIter));
+                const y = H - PADDING - (drawAreaH * (iter.error / maxError));
+                
+                if (index === 0) {
+                    ctx.moveTo(x, y);
+                } else {
+                    ctx.lineTo(x, y);
+                }
+                
+                // Puntos de datos (neón)
+                ctx.fillStyle = '#00ffff';
+                ctx.beginPath();
+                ctx.arc(x, y, 3, 0, Math.PI * 2);
+                ctx.fill();
+            });
+            ctx.stroke();
+            ctx.shadowBlur = 0;
+
+            // 4. Etiquetas
+            ctx.fillStyle = '#f0f6ff';
+            ctx.font = '12px Roboto';
+            ctx.textAlign = 'center';
+            ctx.textBaseline = 'top';
+            ctx.fillText('Iteraciones', W / 2, H - PADDING + 15);
+
+            ctx.textAlign = 'right';
+            ctx.textBaseline = 'middle';
+            ctx.save();
+            ctx.translate(PADDING - 15, H / 2);
+            ctx.rotate(-Math.PI / 2);
+            ctx.fillText('Error (log ||r||)', 0, 0);
+            ctx.restore();
+            
+            // Valores del Eje Y
+            ctx.textAlign = 'right';
+            ctx.textBaseline = 'middle';
+            const yTicks = [maxError, tol, 0];
+            yTicks.forEach(val => {
+                const y = H - PADDING - (drawAreaH * (val / maxError));
+                ctx.fillText(val.toExponential(1), PADDING - 5, y);
+            });
+        }
+
+        // --- CÓDIGO DEL MÉTODO SOR ---
+        function solveSOR() {
+            const A = parseMatrixFromGrid('sor');
+            const b = parseVectorFromInputs('sor');
+            const omega = parseFloat(document.getElementById('sor-omega').value);
+            const tol = parseFloat(document.getElementById('sor-tol').value);
+            const maxIter = parseInt(document.getElementById('sor-max-iter').value);
+
+            const n = b.length;
+            if (n !== 4) {
+                 alert("Error: Asegúrate de que todos los 16 campos de A y los 4 de b están llenos.");
+                 return;
+            }
+
+            let x = new Array(n).fill(0);
+            const iterations = [];
+            let converged = false;
+            
+            for (let iter = 0; iter < maxIter; iter++) {
+                const xOld = [...x];
+                let maxError = 0;
+                
+                for (let i = 0; i < n; i++) {
+                    let sumOld = 0;
+                    let sumNew = 0;
+                    
+                    for (let j = 0; j < n; j++) {
+                        if (i !== j) {
+                            if (j < i) {
+                                sumOld += A[i][j] * x[j];
+                            } else {
+                                sumNew += A[i][j] * xOld[j];
+                            }
+                        }
+                    }
+                    
+                    const x_GS = (b[i] - sumOld - sumNew) / A[i][i];
+                    const x_new = (1 - omega) * xOld[i] + omega * x_GS;
+                    
+                    const error = Math.abs(x_new - xOld[i]);
+                    if (error > maxError) maxError = error;
+                    
+                    x[i] = x_new;
+                }
+                
+                iterations.push({
+                    iter: iter + 1,
+                    x: [...x],
+                    maxError: maxError
+                });
+                
+                if (maxError < tol) {
+                    converged = true;
+                    break;
+                }
+            }
+            
+            displaySORResults(iterations, converged, x);
+            visualizeSORError(iterations, tol); // Pasamos la tolerancia
+            visualizeSORNetwork(x);
+        }
+
+        function displaySORResults(iterations, converged, solution) {
+            const output = document.getElementById('sor-output');
+            const status = converged ? 
+                `<span class="convergence-indicator converged">✓ CONVERGIÓ en ${iterations.length} iteraciones</span>` : 
+                `<span class="convergence-indicator iterating">⚠ NO CONVERGIÓ (Max ${iterations.length} iter.)</span>`;
+            
+            let html = `<p><strong>Estado del Cálculo:</strong> ${status}</p>`;
+            html += `<p><strong>Parámetro $\omega$ utilizado:</strong> ${document.getElementById('sor-omega').value}</p>`;
+            html += `<h4 style="color: #00ffff; margin-top: 20px;">Solución Final: Presiones en kPa</h4>`;
+            html += '<ul style="list-style: none; padding: 20px;">';
+            solution.forEach((val, i) => {
+                html += `<li style="font-size: 1.2em; margin: 10px 0;"><strong>Nodo p${i+1}:</strong> ${val.toFixed(6)} kPa</li>`;
+            });
+            html += '</ul>';
+            
+            html += '<h4 style="color: #00ffff; margin-top: 20px;">Tabla de Iteraciones Detallada:</h4>';
+            html += '<table><thead><tr><th>Iter</th>';
+            for (let i = 0; i < solution.length; i++) {
+                html += `<th>p${i+1}</th>`;
+            }
+            html += '<th>Error Max</th></tr></thead><tbody>';
+            
+            iterations.forEach(iter => {
+                html += `<tr><td>${iter.iter}</td>`;
+                iter.x.forEach(xi => {
+                    html += `<td>${xi.toFixed(6)}</td>`;
+                });
+                html += `<td>${iter.maxError.toExponential(3)}</td></tr>`;
+            });
+            
+            html += '</tbody></table>';
+            output.innerHTML = html;
+        }
+
+        /* GRÁFICO 2: CONVERGENCIA SOR */
+        function visualizeSORError(iterations, tol) {
+            const canvas = document.getElementById('sor-canvas');
+            const ctx = canvas.getContext('2d');
+            const W = canvas.width;
+            const H = canvas.height;
+            const PADDING = 40;
+            ctx.clearRect(0, 0, W, H);
+
+            const errors = iterations.map(i => i.maxError);
+            const maxError = Math.max(...errors) * 1.1; 
+            const maxIter = iterations.length > 0 ? iterations[iterations.length - 1].iter : 1;
+
+            const drawAreaW = W - 2 * PADDING;
+            const drawAreaH = H - 2 * PADDING;
+
+            // 1. Dibujar Ejes
+            ctx.strokeStyle = '#f0f6ff';
+            ctx.lineWidth = 2;
+            ctx.beginPath();
+            ctx.moveTo(PADDING, PADDING);
+            ctx.lineTo(PADDING, H - PADDING); // Eje Y
+            ctx.lineTo(W - PADDING, H - PADDING); // Eje X
+            ctx.stroke();
+
+            // 2. Dibujar Línea de Tolerancia (Horizontal)
+            const tolY = H - PADDING - (drawAreaH * (tol / maxError));
+            ctx.strokeStyle = '#ff00ff';
+            ctx.setLineDash([5, 5]);
+            ctx.lineWidth = 1;
+            ctx.beginPath();
+            ctx.moveTo(PADDING, tolY);
+            ctx.lineTo(W - PADDING, tolY);
+            ctx.stroke();
+            ctx.setLineDash([]); // Reset dash
+
+            // 3. Dibujar Línea de Error
+            ctx.strokeStyle = '#00ff88';
+            ctx.lineWidth = 3;
+            ctx.shadowColor = '#00ff88';
+            ctx.shadowBlur = 10;
+            ctx.beginPath();
+            
+            iterations.forEach((iter, index) => {
+                const x = PADDING + (drawAreaW * ((index + 1) / maxIter));
+                const y = H - PADDING - (drawAreaH * (iter.maxError / maxError));
+                
+                if (index === 0) {
+                    ctx.moveTo(x, y);
+                } else {
+                    ctx.lineTo(x, y);
+                }
+                
+                // Puntos de datos (neón)
+                ctx.fillStyle = '#00ffff';
+                ctx.beginPath();
+                ctx.arc(x, y, 3, 0, Math.PI * 2);
+                ctx.fill();
+            });
+            ctx.stroke();
+            ctx.shadowBlur = 0;
+
+            // 4. Etiquetas
+            ctx.fillStyle = '#f0f6ff';
+            ctx.font = '12px Roboto';
+            ctx.textAlign = 'center';
+            ctx.textBaseline = 'top';
+            ctx.fillText('Iteraciones', W / 2, H - PADDING + 15);
+
+            ctx.textAlign = 'right';
+            ctx.textBaseline = 'middle';
+            ctx.save();
+            ctx.translate(PADDING - 15, H / 2);
+            ctx.rotate(-Math.PI / 2);
+            ctx.fillText('Error Máx', 0, 0);
+            ctx.restore();
+            
+            // Valores del Eje Y
+            ctx.textAlign = 'right';
+            ctx.textBaseline = 'middle';
+            const yTicks = [maxError, tol, 0];
+            yTicks.forEach(val => {
+                const y = H - PADDING - (drawAreaH * (val / maxError));
+                ctx.fillText(val.toExponential(1), PADDING - 5, y);
+            });
+        }
+
+
+        /* SIMULACIÓN 2: RED DE PRESIÓN (SOR) */
+        let sorAnimationId = null;
+        
+        function visualizeSORNetwork(pressures) {
+            const canvas = document.getElementById('sor-simulation-canvas');
+            const ctx = canvas.getContext('2d');
+            const W = canvas.width;
+            const H = canvas.height;
+
+            if (sorAnimationId) {
+                cancelAnimationFrame(sorAnimationId);
+            }
+
+            const maxP = Math.max(...pressures) * 1.1; 
+            const minP = Math.min(0, Math.min(...pressures)) * 0.9;
+            const range = maxP - minP;
+
+            const nodePositions = [
+                {x: W/2, y: H/4, label: 'p1'},
+                {x: W*3/4, y: H/2, label: 'p2'},
+                {x: W/2, y: H*3/4, label: 'p3'},
+                {x: W/4, y: H/2, label: 'p4'}
+            ];
+
+            const minRadius = 15;
+            const maxRadius = 40;
+            const connections = [[0, 1], [0, 2], [0, 3], [1, 2], [1, 3], [2, 3]];
+            
+            function getNodeStyle(pressure) {
+                const ratio = (pressure - minP) / range;
+                const radius = minRadius + ratio * (maxRadius - minRadius);
+                
+                const r = Math.floor(255 * ratio);
+                const g = Math.floor(200 * (1 - Math.abs(ratio - 0.5)));
+                const b = Math.floor(255 * (1 - ratio));
+                
+                return {
+                    radius: radius,
+                    color: `rgb(${r}, ${g}, ${b})`,
+                    shadow: `rgba(${r}, ${g}, ${b}, 0.8)`,
+                    ratio: ratio
+                };
+            }
+
+            let frameCount = 0;
+
+            function animate() {
+                ctx.clearRect(0, 0, W, H);
+                frameCount++;
+
+                // 1. Dibujar Conexiones (Tuberías 3D)
+                ctx.lineWidth = 8;
+                connections.forEach(conn => {
+                    const start = nodePositions[conn[0]];
+                    const end = nodePositions[conn[1]];
+                    
+                    // Sombra/Borde oscuro para efecto 3D
+                    ctx.strokeStyle = '#05081b';
+                    ctx.beginPath();
+                    ctx.moveTo(start.x + 1, start.y + 1);
+                    ctx.lineTo(end.x + 1, end.y + 1);
+                    ctx.stroke();
+
+                    // Tubería de Neón Cian
+                    ctx.strokeStyle = '#00ffff60';
+                    ctx.shadowColor = '#00ffff';
+                    ctx.shadowBlur = 5;
+                    ctx.beginPath();
+                    ctx.moveTo(start.x, start.y);
+                    ctx.lineTo(end.x, end.y);
+                    ctx.stroke();
+                });
+                ctx.shadowBlur = 0;
+
+                // 2. Dibujar Nodos (Presiones)
+                pressures.forEach((p, i) => {
+                    const pos = nodePositions[i];
+                    const style = getNodeStyle(p);
+                    
+                    // Efecto pulsante
+                    const pulse = Math.sin(frameCount * 0.1 + i) * 0.5 + 0.5;
+                    const shadowIntensity = 20 + pulse * 15 * style.ratio;
+                    
+                    // Círculo de Presión
+                    ctx.fillStyle = style.color;
+                    ctx.shadowColor = style.shadow;
+                    ctx.shadowBlur = shadowIntensity;
+                    ctx.beginPath();
+                    ctx.arc(pos.x, pos.y, style.radius, 0, Math.PI * 2);
+                    ctx.fill();
+                    
+                    // Borde
+                    ctx.strokeStyle = '#ffffff';
+                    ctx.lineWidth = 2;
+                    ctx.stroke();
+                    
+                    ctx.shadowBlur = 0;
+                    
+                    // Etiqueta
+                    ctx.fillStyle = '#0a0e27';
+                    ctx.font = 'bold 18px Orbitron';
+                    ctx.textAlign = 'center';
+                    ctx.textBaseline = 'middle';
+                    ctx.fillText(pos.label, pos.x, pos.y - style.radius - 10);
+                    
+                    // Valor de Presión
+                    ctx.fillStyle = '#0a0e27';
+                    ctx.font = '14px Roboto';
+                    ctx.fillText(p.toFixed(2) + ' kPa', pos.x, pos.y + 5);
+                });
+                
+                sorAnimationId = requestAnimationFrame(animate);
+            }
+            animate();
+        }
+
+        // --- CÓDIGO DE INICIALIZACIÓN DE LA INTERFAZ ---
+        function generateMatrixInputs(containerId, prefix) {
+            const container = document.getElementById(containerId);
+            container.innerHTML = '';
+            for (let i = 0; i < 4; i++) {
+                for (let j = 0; j < 4; j++) {
+                    const input = document.createElement('input');
+                    input.type = 'number';
+                    input.id = `${prefix}-A-${i}-${j}`;
+                    input.placeholder = `A[${i+1},${j+1}]`;
+                    container.appendChild(input);
+                }
+            }
+        }
+
+        function generateVectorInputs(containerId, prefix) {
+            const container = document.getElementById(containerId);
+            container.innerHTML = '';
+            for (let i = 0; i < 4; i++) {
+                const input = document.createElement('input');
+                input.type = 'number';
+                input.id = `${prefix}-b-${i}`;
+                input.placeholder = `b[${i+1}]`;
+                container.appendChild(input);
+            }
+        }
+
+        document.addEventListener('DOMContentLoaded', () => {
+            createSnowflakes();
+            
+            // Inicializar las matrices CG
+            generateMatrixInputs('cg-matrix-grid', 'cg');
+            document.getElementById('cg-A-0-0').value = -4; document.getElementById('cg-A-0-1').value = 1; document.getElementById('cg-A-0-2').value = 1; document.getElementById('cg-A-0-3').value = 0;
+            document.getElementById('cg-A-1-0').value = 1; document.getElementById('cg-A-1-1').value = -4; document.getElementById('cg-A-1-2').value = 0; document.getElementById('cg-A-1-3').value = 1;
+            document.getElementById('cg-A-2-0').value = 1; document.getElementById('cg-A-2-1').value = 0; document.getElementById('cg-A-2-2').value = -4; document.getElementById('cg-A-2-3').value = 1;
+            document.getElementById('cg-A-3-0').value = 0; document.getElementById('cg-A-3-1').value = 1; document.getElementById('cg-A-3-2').value = 1; document.getElementById('cg-A-3-3').value = -4;
+
+            generateVectorInputs('cg-vector-inputs', 'cg');
+            document.getElementById('cg-b-0').value = 0; document.getElementById('cg-b-1').value = 0; document.getElementById('cg-b-2').value = 0; document.getElementById('cg-b-3').value = -22;
+            document.getElementById('cg-tol').value = '0.0001';
+            document.getElementById('cg-max-iter').value = '100';
+
+            // Inicializar las matrices SOR
+            generateMatrixInputs('sor-matrix-grid', 'sor');
+            document.getElementById('sor-A-0-0').value = 10; document.getElementById('sor-A-0-1').value = -2; document.getElementById('sor-A-0-2').value = -1; document.getElementById('sor-A-0-3').value = -1;
+            document.getElementById('sor-A-1-0').value = -2; document.getElementById('sor-A-1-1').value = 12; document.getElementById('sor-A-1-2').value = -3; document.getElementById('sor-A-1-3').value = -1;
+            document.getElementById('sor-A-2-0').value = -1; document.getElementById('sor-A-2-1').value = -3; document.getElementById('sor-A-2-2').value = 10; document.getElementById('sor-A-2-3').value = -2;
+            document.getElementById('sor-A-3-0').value = -1; document.getElementById('sor-A-3-1').value = -1; document.getElementById('sor-A-3-2').value = -2; document.getElementById('sor-A-3-3').value = 8;
+            
+            generateVectorInputs('sor-vector-inputs', 'sor');
+            document.getElementById('sor-b-0').value = 50; document.getElementById('sor-b-1').value = 60; document.getElementById('sor-b-2').value = 55; document.getElementById('sor-b-3').value = 40;
+            document.getElementById('sor-omega').value = '1.25';
+            document.getElementById('sor-tol').value = '0.01';
+            document.getElementById('sor-max-iter').value = '30';
+
+            // Visualización inicial (para que se vea algo al cargar)
+            visualizeCGHeatMap([0.0, 0.0, 0.0, 0.0]);
+            visualizeCGError([], 0.0001); // Dibuja ejes vacíos
+            visualizeSORNetwork([50, 60, 55, 40]);
+            visualizeSORError([], 0.01); // Dibuja ejes vacíos
+        });
+    </script>
+    
+    <header>
+        <h1>🔥 Solucionador de Métodos Numéricos 🔥</h1>
+        <nav>
+            <button class="nav-btn active" onclick="showMethod('cg', event)">Gradiente Conjugado (CG)</button>
+            <button class="nav-btn" onclick="showMethod('sor', event)">Sobre-Relajación (SOR)</button>
+        </nav>
+    </header>
+
+    <div class="container">
+        <div id="cg-section" class="method-section active">
+            <div class="left-panel">
+                <div class="info-card">
+                    <h2>🌡️ Sistema de Distribución de Calor en Placa Metálica</h2>
+                    <p>Este método resuelve la distribución de temperatura en una placa metálica rectangular dividida en **4 puntos internos** utilizando el <strong>Método del Gradiente Conjugado</strong>.</p>
+                    <p><strong>Problema Real:</strong> Se busca la temperatura en estado estacionario. El sistema está modelado por el calor que fluye entre los 4 puntos internos y las condiciones de frontera (bordes).</p>
+                    <p><strong>Aplicaciones:</strong> Diseño de disipadores de calor, análisis de puentes térmicos en ingeniería civil y mecánica.</p>
+                </div>
+
+                <div class="input-section">
+                    <h3 style="color: #00ff88; margin-bottom: 20px;">Configuración del Sistema $Ax = b$ (CG)</h3>
+                    <div class="input-group">
+                        <label>Matriz A (4x4) - Coeficientes del sistema:</label>
+                        <div id="cg-matrix-grid" class="matrix-grid">
+                            </div>
+                    </div>
+                    <div class="input-group">
+                        <label>Vector b (Condiciones de frontera):</label>
+                        <div id="cg-vector-inputs" class="vector-input">
+                            </div>
+                    </div>
+                    <div class="input-group-row" style="display: flex; gap: 20px;">
+                        <div class="input-group" style="flex: 1;">
+                            <label>Tolerancia (Error $\epsilon$):</label>
+                            <input type="number" id="cg-tol" value="0.0001" step="0.0001">
+                        </div>
+                        <div class="input-group" style="flex: 1;">
+                            <label>Máximo de Iteraciones:</label>
+                            <input type="number" id="cg-max-iter" value="100">
+                        </div>
+                    </div>
+                    <button class="solve-btn" onclick="solveCG()">⚡ Calcular Temperatura por CG</button>
+                </div>
+            </div>
+
+            <div id="cg-results" class="results">
+                <h3>📊 Resultados del Gradiente Conjugado</h3>
+                <div id="cg-output"></div>
+                
+                <h4 style="color: #00ff88; text-align: center;">🔥 Simulación de Distribución de Calor 🔥</h4>
+                <div class="simulation">
+                    <canvas id="cg-simulation-canvas" width="400" height="400"></canvas>
+                </div>
+
+                <h4 style="color: #ff00ff; text-align: center;">📈 Gráfico de Convergencia (Error)</h4>
+                <div class="simulation">
+                    <canvas id="cg-canvas" width="600" height="400"></canvas>
+                </div>
+            </div>
+        </div>
+
+        <div id="sor-section" class="method-section">
+            <div class="left-panel">
+                <div class="info-card">
+                    <h2>💧 Red de Distribución de Agua</h2>
+                    <p>Este método calcula las **presiones ($p_i$) en los 4 nodos** de una red de distribución de agua utilizando el <strong>Método de Sobre-Relajación Sucesiva (SOR)</strong>.</p>
+                    <p><strong>Problema Real:</strong> La matriz $A$ representa la conectividad y las resistencias (conductividades) de las tuberías. El vector $b$ son las presiones o flujos de entrada.</p>
+                    <p><strong>Parámetro $\omega$:</strong> El factor de sobre-relajación $\omega \in (1, 2)$ se usa para acelerar la convergencia del método de Gauss-Seidel.</p>
+                    <p><strong>Aplicaciones:</strong> Modelado de redes hidráulicas, sistemas de riego, distribución urbana de agua.</p>
+                </div>
+
+                <div class="input-section">
+                    <h3 style="color: #00ff88; margin-bottom: 25px;">Configuración del Sistema $Ap = b$ (SOR)</h3>
+                    <div class="input-group">
+                        <label>Matriz A (4x4) - Coeficientes del sistema:</label>
+                        <div id="sor-matrix-grid" class="matrix-grid">
+                            </div>
+                    </div>
+                    <div class="input-group">
+                        <label>Vector b (Presiones de entrada):</label>
+                        <div id="sor-vector-inputs" class="vector-input">
+                            </div>
+                    </div>
+                    <div class="input-group-row" style="display: flex; gap: 20px;">
+                        <div class="input-group" style="flex: 1;">
+                            <label>Parámetro $\omega$ (Relajación):</label>
+                            <input type="number" id="sor-omega" value="1.25" step="0.05" min="1" max="2">
+                        </div>
+                        <div class="input-group" style="flex: 1;">
+                            <label>Tolerancia (Error Máx):</label>
+                            <input type="number" id="sor-tol" value="0.01" step="0.01">
+                        </div>
+                    </div>
+                    <div class="input-group">
+                        <label>Máximo de Iteraciones:</label>
+                        <input type="number" id="sor-max-iter" value="30">
+                    </div>
+                    <button class="solve-btn" onclick="solveSOR()">⚡ Calcular Presiones por SOR</button>
+                </div>
+            </div>
+
+            <div id="sor-results" class="results">
+                <h3>📊 Resultados del Método SOR</h3>
+                <div id="sor-output"></div>
+
+                <h4 style="color: #00ff88; text-align: center;">💧 Simulación de Red de Presión de Agua 💧</h4>
+                <div class="simulation">
+                    <canvas id="sor-simulation-canvas" width="400" height="400"></canvas>
+                </div>
+                
+                <h4 style="color: #ff00ff; text-align: center;">📈 Gráfico de Convergencia (Error Máx)</h4>
+                <div class="simulation">
+                    <canvas id="sor-canvas" width="600" height="400"></canvas>
+                </div>
+            </div>
+        </div>
+    </div>
+</body>
+</html>
