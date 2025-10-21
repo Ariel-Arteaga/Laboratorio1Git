@@ -1,2 +1,2 @@
-# Laboratorio1Git
-##  Laboratorio de git y git hub
+# Programa que soluciona los metodos numericos
+## SIS-254
